@@ -34,13 +34,20 @@ case "$MEMORY" in ''|*[!0-9]*) MEMORY=192 ;; esac
 # A YAML double-quoted string. The settings refuse " and \ in paths, so nothing needs escaping.
 q() { printf '"%s"' "$1"; }
 
-# The admin password: made once, kept in admin-password (readable by root only) and used for every config written.
-if [ ! -s admin-password ]; then
-    pw=$(tr -dc 'A-Za-z0-9' < /dev/urandom 2>/dev/null | head -c 16)
-    [ ${#pw} -eq 16 ] || { say "can't make a password"; exit 1; }
-    printf '%s\n' "$pw" > admin-password.new && mv admin-password.new admin-password
-fi
-PASSWORD=$(head -n 1 admin-password)
+# The admin password. FileBrowser sets the admin's password to auth.adminPassword at every start (unless it is blank or
+# "admin"), which would undo a change made in its settings page. So the password from the settings goes into the config
+# only when the database is new or the setting differs from the one last given (kept in password.given, root only);
+# otherwise the config has it blank and the password set in FileBrowser stays.
+DEFAULT_PASSWORD=mpcadmin
+PASSWORD=$(conf password)
+case "$PASSWORD" in
+    '') PASSWORD=$DEFAULT_PASSWORD ;;
+    admin|*\"*|*\\*) say "password: FileBrowser won't take \"admin\", a quote or a backslash; using $DEFAULT_PASSWORD"
+        PASSWORD=$DEFAULT_PASSWORD ;;
+esac
+[ ${#PASSWORD} -ge 5 ] || { say "password: shorter than FileBrowser's 5 characters; using $DEFAULT_PASSWORD"; PASSWORD=$DEFAULT_PASSWORD; }
+GIVE=""
+if [ ! -e filebrowser.sqlite ] || [ "$(cat password.given 2>/dev/null)" != "$PASSWORD" ]; then GIVE=$PASSWORD; fi
 
 write_config() {
     {
@@ -69,7 +76,9 @@ write_config() {
             case "$p" in *\"*|*\\*) say "sources: $p holds a quote or backslash, skipped"; continue ;; esac
             [ -d "$p" ] || { say "sources: no folder $p, skipped"; continue; }
             [ -n "$(ls -A "$p" 2>/dev/null)" ] || { say "sources: $p is empty (nothing mounted there?), skipped"; continue; }
-            n=${p%/}; n=${n##*/}; [ -n "$n" ] || n=root
+            case "${p%/}" in   # the name shown for it: the device's two usual folders by what they hold
+                /media) n=Drives ;; /storage) n=Storage ;; *) n=${p%/}; n=${n##*/}; [ -n "$n" ] || n=root ;;
+            esac
             k=2; base=$n
             while case "$names" in *" $n "*) true ;; *) false ;; esac; do n="$base-$k"; k=$((k + 1)); done
             names="$names$n "
@@ -86,7 +95,7 @@ write_config() {
         IFS=$old_ifs
         echo "auth:"
         echo "  adminUsername: admin"
-        echo "  adminPassword: $(q "$PASSWORD")"
+        echo "  adminPassword: $(q "$GIVE")"
         echo "  methods:"
         echo "    password:"
         echo "      enabled: true"
@@ -124,12 +133,21 @@ fi
 chmod 755 filebrowser 2>/dev/null   # the installer copies every file as 644
 export GOMAXPROCS=2 GOMEMLIMIT="${MEMORY}MiB" HOME="$D"
 FB=""
+GIVEN=""
 start() {
+    # The password went to an earlier run that made the database: give it no more (blank leaves the stored one alone),
+    # so a restart (a crash, the first-run restart) keeps a password set in FileBrowser meanwhile.
+    if [ -n "$GIVEN" ] && [ -e filebrowser.sqlite ]; then GIVEN=""; GIVE=""; write_config; fi
     ./filebrowser -c "$CFG" < /dev/null >> "$LOG" 2>&1 &
     FB=$!
     echo "$FB" > "$PIDFILE"
     STARTED=$(date +%s)
     say "started FileBrowser $FB on $BIND:$PORT"
+    if [ -n "$GIVE" ] && [ -z "$USERCFG" ]; then
+        say "admin password set from $CONF"
+        printf '%s\n' "$PASSWORD" > password.given.new && mv password.given.new password.given
+        GIVEN=1
+    fi
 }
 stop() {
     trap - TERM INT HUP
@@ -145,9 +163,29 @@ stop() {
 }
 trap stop TERM INT HUP
 
+# FileBrowser greets the admin with a "new database was created" warning for as long as the run that made the
+# database lasts. So the first run, once it answers, is stopped and started again at once: the warning is never seen.
+answers() {
+    case "$BIND" in 0.0.0.0|::) h=127.0.0.1 ;; *:*) h="[$BIND]" ;; *) h=$BIND ;; esac
+    wget -q -O /dev/null "http://$h:$PORT/health" 2>/dev/null
+}
+prime() {
+    [ -z "$USERCFG" ] || return 0   # a config of your own may keep its database elsewhere
+    command -v wget > /dev/null 2>&1 || return 0
+    i=0; while ! answers; do alive "$FB" && kill -0 "$MPC" 2>/dev/null && [ $i -lt 120 ] || return 0; sleep 1; i=$((i + 1)); done
+    say "first run: starting FileBrowser again now that its database exists"
+    kill "$FB" 2>/dev/null
+    i=0; while alive "$FB" && [ $i -lt 25 ]; do sleep 0.2; i=$((i + 1)); done
+    alive "$FB" && kill -9 "$FB" 2>/dev/null
+    wait "$FB" 2>/dev/null
+    start
+}
+
 say "MPC $MPC started; sources=$SOURCES index=$INDEX"
 DELAY=5
+NEWDB=0; [ -e filebrowser.sqlite ] || NEWDB=1
 start
+[ $NEWDB = 1 ] && prime
 while kill -0 "$MPC" 2>/dev/null; do
     if ! alive "$FB"; then
         wait "$FB" 2>/dev/null; rc=$?

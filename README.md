@@ -27,13 +27,11 @@ it running:
 ssh -N -L 6740:127.0.0.1:6740 root@<device address>
 ```
 
-Then open `http://localhost:6740` and log in as **admin** with the password in
-`/data/mpc-addins/filebrowser/admin-password` (`ssh root@<device> cat /data/mpc-addins/filebrowser/admin-password`). The
-addin makes it, 16 random characters, at the first MPC start after installing, and sets it again at every start, so
-change it by editing that file, not in FileBrowser's settings.
+Then open `http://localhost:6740` and log in as **admin** with the password **mpcadmin**. Change it in FileBrowser's
+settings (the change stays across MPC restarts), or with `password=` in the addin's settings below.
 
-`bind=0.0.0.0` in the settings opens it to every network the device is on instead. Unlike the other network addins it
-has a login, but an admin can read, change and delete every file in the folders it shows, and the server runs as root.
+`bind=0.0.0.0` in the settings opens it to every network the device is on instead; change the password first, since the
+default is the same on every device. Unlike the other network addins it has a login, but an admin can read, change and delete every file in the folders it shows, and the server runs as root.
 
 ## Settings
 
@@ -43,7 +41,8 @@ has a login, but an admin can read, change and delete every file in the folders 
 |---|---|---|
 | `enabled` | `1` | `0`: start nothing |
 | `bind`, `port` | `127.0.0.1`, `6740` | where FileBrowser listens |
-| `sources` | `/media:/storage` | the folders it shows, split by `:`. One that doesn't exist or is empty (a mount point with nothing mounted) is skipped. `/media` holds the internal drive on Gen1 and every SD card and USB drive on both generations |
+| `password` | `mpcadmin` | the admin's password, set at the first start and again whenever this line changes. A password changed in FileBrowser's own settings stays until then. At least 5 characters, not `admin` (FileBrowser treats that one specially) |
+| `sources` | `/media:/storage` | the folders it shows, split by `:` (listed as Drives and Storage). One that doesn't exist or is empty (a mount point with nothing mounted) is skipped. `/media` holds the internal drive on Gen1 and every SD card and USB drive on both generations |
 | `index` | `0` | `1`: FileBrowser's search index (a full scan of the folders at each start, then rescans). Off by default because the scan competes with MPC for the disk; browsing, uploads and downloads work without it |
 | `previews` | `1` | image thumbnails |
 | `nice` | `19` | FileBrowser's CPU priority (0..19, higher is gentler). It always runs in the idle disk class too |
@@ -51,8 +50,8 @@ has a login, but an admin can read, change and delete every file in the folders 
 | `log` | empty | a file to append FileBrowser's and the script's log to |
 | `config` | empty | a FileBrowser config file of your own, used instead of the one written from the keys above |
 
-The config written from these keys is `config.yaml` in the same folder. FileBrowser's database, its thumbnail cache and
-the password file live there too; uninstalling leaves them (and so the folder) in place. Delete the folder to remove them.
+The config written from these keys is `config.yaml` in the same folder. FileBrowser's database (with its users and their
+settings), its thumbnail cache and `password.given` (the last `password=` given to it) live there too; uninstalling leaves them (and so the folder) in place. Delete the folder to remove them.
 
 ## Install
 

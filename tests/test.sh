@@ -58,7 +58,7 @@ for SH in /bin/sh $(command -v busybox >/dev/null && echo busybox); do
     check "script has its own session" '[ "$(field "$RUNNER" 4)" != "$(field "$PID" 4)" ]'
     check "nice value from the settings" '[ "$(field "$FB" 17)" = 17 ]'
     check "binary made executable" '[ -x "$T/addin/filebrowser" ]'
-    check "admin password made" '[ "$(head -c 16 "$T/addin/admin-password" | tr -dc A-Za-z0-9 | wc -c)" = 16 ]'
+    check "default password given at the first start" 'grep -qx mpcadmin "$T/addin/password.given" && grep -q "adminPassword: \"mpcadmin\"" "$T/addin/config.yaml"'
     check "MPC itself still running" '! gone "$PID"'
     kill "$PID"; wait "$PID" 2>/dev/null || true
     check "filebrowser stopped after MPC exits" 'wait_for "gone $FB" && [ -e "$T/addin/fake.stopped" ]'
@@ -81,6 +81,9 @@ check "no usable source: nothing started, logged" '[ ! -e "$T/addin/fake.pid" ] 
 kill "$PID" 2>/dev/null || true
 setup "bind=1.2.3.4; rm -rf /" "port=99999"; mpc
 check "bad bind and port fall back to the defaults" 'wait_for "[ -s $T/addin/fake.pid ]" && grep -q "listen: \"127.0.0.1\"" "$T/addin/config.yaml" && grep -q "port: 6740" "$T/addin/config.yaml"'
+kill "$PID" 2>/dev/null || true
+setup "password=admin"; mpc
+check "password admin refused: the default given" 'wait_for "[ -s $T/addin/password.given ]" && grep -qx mpcadmin "$T/addin/password.given" && grep -q "won.t take" "$T/addin/log.txt"'
 kill "$PID" 2>/dev/null || true
 
 wait_for 'gone "$(cat "$T/addin/fake.pid" 2>/dev/null || echo 0)"' || true
