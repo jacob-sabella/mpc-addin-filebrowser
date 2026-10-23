@@ -15,19 +15,33 @@ upstream publishes a newer stable release (see [Updating FileBrowser](#updating-
 
 ![The device and a file manager in a browser, with samples going both ways](docs/tile.png)
 
-**Status:** offline only. The host tests and the real FileBrowser binary for both device CPUs under QEMU pass
-(`tests/`), and both zips pass the catalog check. Not yet run on a device.
+**Status:** runs on an MPC Key 37 (Gen1) beside MPC (2026-10-23); the screenshots below are from it.
+Gen2 is tested offline only: the host tests and the real FileBrowser binary for both device CPUs under QEMU pass
+(`tests/`), and both zips pass the catalog check.
+
+## Screenshots
+
+From an MPC Key 37, through the SSH tunnel below.
+
+| | |
+|---|---|
+| ![MPC's factory content in the file list](docs/screenshots/browse.png) | ![MPC.settings open in the built-in editor, at its VST plugin list](docs/screenshots/editor.png) |
+| Browsing MPC's internal storage | MPC.settings in the built-in text editor |
+| ![A sample open in the audio player](docs/screenshots/player.png) | ![The login page](docs/screenshots/login.png) |
+| Playing a sample in the browser | Logging in |
+
+<img src="docs/screenshots/phone.png" alt="MPC Documents on a phone" width="260">
 
 ## Connecting
 
-FileBrowser listens on the device only (`bind=127.0.0.1`), on port 6740. From a computer, open an SSH tunnel and leave
+FileBrowser listens on the device only (`bind=127.0.0.1`), on port 6760. From a computer, open an SSH tunnel and leave
 it running:
 
 ```sh
-ssh -N -L 6740:127.0.0.1:6740 root@<device address>
+ssh -N -L 6760:127.0.0.1:6760 root@<device address>
 ```
 
-Then open `http://localhost:6740` and log in as **admin** with the password **mpcadmin**. Change it in FileBrowser's
+Then open `http://localhost:6760` and log in as **admin** with the password **mpcadmin**. Change it in FileBrowser's
 settings (the change stays across MPC restarts), or with `password=` in the addin's settings below.
 
 `bind=0.0.0.0` in the settings opens it to every network the device is on instead; change the password first, since the
@@ -40,7 +54,7 @@ default is the same on every device. Unlike the other network addins it has a lo
 | Key | Default | |
 |---|---|---|
 | `enabled` | `1` | `0`: start nothing |
-| `bind`, `port` | `127.0.0.1`, `6740` | where FileBrowser listens |
+| `bind`, `port` | `127.0.0.1`, `6760` | where FileBrowser listens |
 | `password` | `mpcadmin` | the admin's password, set at the first start and again whenever this line changes. A password changed in FileBrowser's own settings stays until then. At least 5 characters, not `admin` (FileBrowser treats that one specially) |
 | `sources` | `/media:/storage` | the folders it shows, split by `:` (listed as Drives and Storage). One that doesn't exist or is empty (a mount point with nothing mounted) is skipped. `/media` holds the internal drive on Gen1 and every SD card and USB drive on both generations |
 | `index` | `0` | `1`: FileBrowser's search index (a full scan of the folders at each start, then rescans). Off by default because the scan competes with MPC for the disk; browsing, uploads and downloads work without it |
