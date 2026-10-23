@@ -3,7 +3,7 @@
 # in both places below. It is the head of sd88me/mpc-vst-plugins#512 (Gen2 addins), as in mpc-addin-commander: move
 # both pins to a main commit once that is merged.
 # Run it from the Actions tab or `gh workflow run release.yml -f version=<x.y.z>`, then publish the draft
-# (as a prerelease while the version is 0.x).
+# (as a prerelease while the version is 0.x) once tested.json has an entry for the version from a device test.
 name: Release
 
 on:

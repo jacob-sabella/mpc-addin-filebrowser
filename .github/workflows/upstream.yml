@@ -3,6 +3,7 @@
 # doesn't start the Test workflow, so the tests run here first and the pull request links to this run. Merging it and
 # running Release ships the new FileBrowser. Run it by hand with a tag to move to that one.
 #
+# A new FileBrowser needs a new device test (tested.json) before its release is published.
 # Needs the repository setting "Allow GitHub Actions to create and approve pull requests" (Settings > Actions > General).
 name: Upstream
 
