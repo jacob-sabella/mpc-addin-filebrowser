@@ -1,0 +1,8 @@
+# This addin, for the shared installer in mpc-vst-plugins (tools/release/addin; the keys are in its docs/ADDINS.md).
+ADDIN_ID=filebrowser
+ADDIN_NAME="MPC File Browser"
+ADDIN_SO=mpc_filebrowser_addin.so
+ADDIN_CONF=mpc_filebrowser_addin.conf
+ADDIN_FILES="filebrowser filebrowser-run.sh LICENSE-filebrowser"
+ADDIN_DONE="From a computer: ssh -N -L 6740:127.0.0.1:6740 root@<device>, then open http://localhost:6740 and log in as admin with the password in /data/mpc-addins/filebrowser/admin-password (made at the first MPC start)."
+ADDIN_NETWORK=1
