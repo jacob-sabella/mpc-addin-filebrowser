@@ -13,6 +13,8 @@ This repo holds none of FileBrowser Quantum's code or binaries: `upstream.env` n
 files, and the build downloads them and refuses anything that doesn't match. A daily workflow opens a pull request when
 upstream publishes a newer stable release (see [Updating FileBrowser](#updating-filebrowser)).
 
+![The device and a file manager in a browser, with samples going both ways](docs/tile.png)
+
 **Status:** offline only. The host tests and the real FileBrowser binary for both device CPUs under QEMU pass
 (`tests/`), and both zips pass the catalog check. Not yet run on a device.
 
