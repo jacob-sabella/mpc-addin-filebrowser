@@ -15,7 +15,7 @@ upstream publishes a newer stable release (see [Updating FileBrowser](#updating-
 
 ![The device and a file manager in a browser, with samples going both ways](docs/tile.png)
 
-**Status:** runs on an MPC Key 37 (Gen1) beside MPC (2026-10-23); the screenshots below are from it.
+**Status:** runs on an MPC Key 37 (Gen1) beside MPC (2026-10-23); the screenshots below are from it (`tested.json`).
 Gen2 is tested offline only: the host tests and the real FileBrowser binary for both device CPUs under QEMU pass
 (`tests/`), and both zips pass the catalog check.
 
