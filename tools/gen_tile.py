@@ -87,7 +87,7 @@ def browser(rng, bx, by, bw, bh):
         o.append('<circle cx="%g" cy="%g" r="6" fill="%s"/>' % (bx + 10 + i * 20, by - 23, c))
     o.append('<rect x="%g" y="%g" width="%g" height="24" rx="12" fill="#1b1c1f"/>' % (bx + 80, by - 35, bw - 90))
     o.append('<text x="%g" y="%g" font-family="DejaVu Sans Mono, monospace" font-size="14" fill="#9a9ca3">'
-             'localhost:6740</text>' % (bx + 98, by - 18))
+             'localhost:6760</text>' % (bx + 98, by - 18))
     o.append('<rect x="%g" y="%g" width="%g" height="%g" fill="#0e0f11"/>' % (bx, by, bw, bh))
     sw = bw * 0.24                                           # sidebar: drives, one selected, with a fill gauge
     o.append('<rect x="%g" y="%g" width="%g" height="%g" fill="#17181b"/>' % (bx, by, sw, bh))

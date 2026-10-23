@@ -80,7 +80,7 @@ setup "sources=$T/missing"; mpc; sleep 1
 check "no usable source: nothing started, logged" '[ ! -e "$T/addin/fake.pid" ] && grep -q "no usable folder" "$T/addin/log.txt"'
 kill "$PID" 2>/dev/null || true
 setup "bind=1.2.3.4; rm -rf /" "port=99999"; mpc
-check "bad bind and port fall back to the defaults" 'wait_for "[ -s $T/addin/fake.pid ]" && grep -q "listen: \"127.0.0.1\"" "$T/addin/config.yaml" && grep -q "port: 6740" "$T/addin/config.yaml"'
+check "bad bind and port fall back to the defaults" 'wait_for "[ -s $T/addin/fake.pid ]" && grep -q "listen: \"127.0.0.1\"" "$T/addin/config.yaml" && grep -q "port: 6760" "$T/addin/config.yaml"'
 kill "$PID" 2>/dev/null || true
 setup "password=admin"; mpc
 check "password admin refused: the default given" 'wait_for "[ -s $T/addin/password.given ]" && grep -qx mpcadmin "$T/addin/password.given" && grep -q "won.t take" "$T/addin/log.txt"'

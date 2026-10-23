@@ -24,8 +24,8 @@ case "$LOG" in /*) ;; *) LOG=/dev/null ;; esac
 BIND=$(conf bind); PORT=$(conf port); SOURCES=$(conf sources); INDEX=$(conf index); PREVIEWS=$(conf previews)
 MEMORY=$(conf memory_mb); USERCFG=$(conf config)
 case "$BIND" in ''|*[!0-9A-Fa-f.:]*) BIND=127.0.0.1 ;; esac
-case "$PORT" in ''|*[!0-9]*) PORT=6740 ;; esac
-[ "$PORT" -ge 1 ] && [ "$PORT" -le 65535 ] || PORT=6740
+case "$PORT" in ''|*[!0-9]*) PORT=6760 ;; esac
+[ "$PORT" -ge 1 ] && [ "$PORT" -le 65535 ] || PORT=6760
 [ -n "$SOURCES" ] || SOURCES=/media:/storage
 [ "$INDEX" = 1 ] || INDEX=0
 [ "$PREVIEWS" = 0 ] || PREVIEWS=1
