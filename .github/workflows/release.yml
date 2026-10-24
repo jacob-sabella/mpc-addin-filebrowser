@@ -1,7 +1,6 @@
 # Build the addin for MPC OS Gen1 (armv7) and Gen2 (aarch64) and attach both zips to a DRAFT release, with
 # mpc-vst-plugins' reusable workflow (its docs/ADDINS.md, "Releasing from CI"). mpc-vst-plugins is pinned to ONE commit
-# in both places below. It is the head of sd88me/mpc-vst-plugins#512 (Gen2 addins), as in mpc-addin-commander: move
-# both pins to a main commit once that is merged.
+# in both places below: a main commit after #512 (Gen2 addins) merged. Move both together.
 # Run it from the Actions tab or `gh workflow run release.yml -f version=<x.y.z>`, then publish the draft
 # (as a prerelease while the version is 0.x) once tested.json has an entry for the version from a device test.
 name: Release
@@ -20,12 +19,12 @@ on:
 
 jobs:
   addin:
-    uses: sd88me/mpc-vst-plugins/.github/workflows/addin-release.yml@1acb45cb9a327cc861d8ea29c95b1cb068f568e2
+    uses: sd88me/mpc-vst-plugins/.github/workflows/addin-release.yml@68da25ab50925ec9d3c7fc8e623087ee72338faa
     permissions: { contents: write }
     with:
       tag: filebrowser-addin-v${{ inputs.version }}
       version: ${{ inputs.version }}
-      tools_ref: 1acb45cb9a327cc861d8ea29c95b1cb068f568e2
+      tools_ref: 68da25ab50925ec9d3c7fc8e623087ee72338faa
       package_dir: build
       build: ./build.sh armv7
       package_dir_aarch64: build/aarch64
