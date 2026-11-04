@@ -11,8 +11,11 @@ cleanup() { pkill -f "$T/" 2>/dev/null || true; rm -rf "$T"; }
 trap cleanup EXIT
 gcc -std=gnu11 -O1 -g -Wall -Wextra -Werror -fPIC -shared -fvisibility=hidden -o "$T/mpc_filebrowser_addin.so" src/filebrowser.c
 mkdir -p "$T/bin" "$T/src/Samples"
-cp "$(command -v sleep)" "$T/bin/MPC"
-cp "$(command -v sleep)" "$T/bin/other"
+# A stand-in that sleeps under any name. Not a copy of sleep: Ubuntu 26.04's Rust coreutils is one multi-call binary that
+# picks the tool from its name, so a copy named MPC exits with "unknown program 'MPC'".
+printf '#include <stdlib.h>\n#include <unistd.h>\nint main(int c, char **v) { sleep(c > 1 ? atoi(v[1]) : 60); return 0; }\n' |
+    gcc -x c -o "$T/bin/MPC" -
+cp "$T/bin/MPC" "$T/bin/other"
 echo x > "$T/src/Samples/kick.wav"
 fail=0; check() { if eval "$2"; then echo "ok   $1"; else echo "FAIL $1"; fail=1; fi; }
 wait_for() { i=0; while [ $i -lt 50 ]; do eval "$1" && return 0; sleep 0.1; i=$((i + 1)); done; return 1; }
