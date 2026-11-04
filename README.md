@@ -72,7 +72,7 @@ leaves them, and so the folder, in place. Delete the folder to remove them.
 
 ## Installing
 
-Get it from the [MPC plugin catalog](https://sd88me.github.io/mpc-vst-plugins/), or download a zip from this repo's
+Get it from the [MPC plugin catalog](https://open-mpc.github.io/), or download a zip from this repo's
 Releases page:
 
 - `-mpc-armv7.zip` for Gen1: MPC Live and Live II, One, X, Key 61 and Key 37, Force
