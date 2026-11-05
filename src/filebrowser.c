@@ -120,28 +120,30 @@ static int is_mpc_process(void)
     return !strcmp(base ? base + 1 : exe, "MPC");
 }
 
-// The grandchild, between fork and exec: plain system calls only.
+// The grandchild, between fork and exec: raw system calls only, never a libc function by name. The fork happens in
+// this library's constructor, which runs before the other preloaded libraries' constructors (the last one preloaded is
+// initialised first), and a preload that overrides open() or close() (the device's MIDI injector does) would otherwise
+// run here, in a copy of MPC whose other addins aren't initialised yet: on a Key 37 that ran their start-up in this
+// process, which then bound their ports and made a second MIDI client before the exec (docs/NOTES.md, 2026-11-05).
 static void __attribute__((noreturn)) exec_script(const char *sh, char *const argv[], char *const envp[], int nice)
 {
-    setsid();
-    sigset_t none;
-    sigemptyset(&none);
-    sigprocmask(SIG_SETMASK, &none, NULL);
-    struct sigaction dfl;
-    memset(&dfl, 0, sizeof dfl);
-    dfl.sa_handler = SIG_DFL;
-    for (int s = 1; s < 65; s++) sigaction(s, &dfl, NULL);   // fails harmlessly for SIGKILL, SIGSTOP and gaps
+    syscall(SYS_setsid);
+    unsigned long zero[16] = {0};   // an empty signal mask, and a kernel sigaction that is SIG_DFL in every layout
+    syscall(SYS_rt_sigprocmask, SIG_SETMASK, zero, NULL, (long)(_NSIG / 8));
+    for (int s = 1; s < 65; s++)    // fails harmlessly for SIGKILL, SIGSTOP and gaps
+        syscall(SYS_rt_sigaction, s, zero, NULL, (long)(_NSIG / 8));
     struct sched_param sp = {0};
-    sched_setscheduler(0, SCHED_OTHER, &sp);                // in case the forking thread was real-time
-    setpriority(PRIO_PROCESS, 0, nice);
+    syscall(SYS_sched_setscheduler, 0, SCHED_OTHER, &sp);   // in case the forking thread was real-time
+    syscall(SYS_setpriority, PRIO_PROCESS, 0, nice);
     syscall(SYS_ioprio_set, IOPRIO_WHO_PROCESS, 0, IOPRIO_CLASS_IDLE << 13);
-    int null = open("/dev/null", O_RDWR);
-    if (null >= 0) { dup2(null, 0); dup2(null, 1); dup2(null, 2); }
-    struct rlimit rl;
-    int max = getrlimit(RLIMIT_NOFILE, &rl) == 0 && rl.rlim_cur < 65536 ? (int)rl.rlim_cur : 65536;
-    for (int fd = 3; fd < max; fd++) close(fd);
-    execve(sh, argv, envp);
-    _exit(127);
+    long null = syscall(SYS_openat, AT_FDCWD, "/dev/null", O_RDWR);
+    for (int fd = 0; null >= 0 && fd < 3; fd++) if (fd != null) syscall(SYS_dup3, null, fd, 0);
+    struct { unsigned long long cur, max; } rl;
+    int max = syscall(SYS_prlimit64, 0, RLIMIT_NOFILE, NULL, &rl) == 0 && rl.cur < 65536 ? (int)rl.cur : 65536;
+    for (int fd = 3; fd < max; fd++) syscall(SYS_close, fd);
+    syscall(SYS_execve, sh, argv, envp);
+    syscall(SYS_exit_group, 127);
+    __builtin_unreachable();
 }
 
 // Settings, then the script. 0 when it was started, -1 when disabled or it failed. A test harness calls it directly.
