@@ -85,6 +85,19 @@ kill "$PID" 2>/dev/null || true
 setup "bind=1.2.3.4; rm -rf /" "port=99999"; mpc
 check "bad bind and port fall back to the defaults" 'wait_for "[ -s $T/addin/fake.pid ]" && grep -q "listen: \"127.0.0.1\"" "$T/addin/config.yaml" && grep -q "port: 6760" "$T/addin/config.yaml"'
 kill "$PID" 2>/dev/null || true
+setup "gateway_login=1"; mpc
+check "gateway_login=1 without the gateway addin: off, logged" 'wait_for "[ -s $T/addin/fake.pid ]" && ! grep -q "proxy:" "$T/addin/config.yaml" && grep -q "the gateway addin isn.t installed" "$T/addin/log.txt"'
+kill "$PID" 2>/dev/null || true; wait "$PID" 2>/dev/null || true; sleep 1
+setup "gateway_login=1"; mkdir -p "$T/gateway"; echo ADDIN_ID=gateway > "$T/gateway/addin.manifest"; mpc
+check "gateway_login=1 beside the gateway: its header lets the user in, every file permission" 'wait_for "[ -s $T/addin/fake.pid ]" && grep -q "header: \"X-MPC-Gateway-User\"" "$T/addin/config.yaml" && grep -q "create: true" "$T/addin/config.yaml" && grep -q "signup: false" "$T/addin/config.yaml"'
+kill "$PID" 2>/dev/null || true; wait "$PID" 2>/dev/null || true; sleep 1
+setup "gateway_login=1" "bind=0.0.0.0"; mpc
+check "gateway_login=1 with bind=0.0.0.0: off (anyone could send the header), logged" 'wait_for "[ -s $T/addin/fake.pid ]" && ! grep -q "proxy:" "$T/addin/config.yaml" && grep -q "gateway_login=1 needs bind=127.0.0.1" "$T/addin/log.txt"'
+kill "$PID" 2>/dev/null || true; wait "$PID" 2>/dev/null || true; sleep 1
+rm -rf "$T/gateway"
+setup; mpc
+check "off by default" 'wait_for "[ -s $T/addin/fake.pid ]" && ! grep -q "proxy:" "$T/addin/config.yaml" && ! grep -q defaultPermissions "$T/addin/config.yaml"'
+kill "$PID" 2>/dev/null || true; wait "$PID" 2>/dev/null || true; sleep 1
 setup "password=admin"; mpc
 check "password admin refused: the default given" 'wait_for "[ -s $T/addin/password.given ]" && grep -qx mpcadmin "$T/addin/password.given" && grep -q "won.t take" "$T/addin/log.txt"'
 kill "$PID" 2>/dev/null || true

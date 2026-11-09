@@ -49,8 +49,20 @@ sleep 1000 & MPC3=$!          # MPC restarted after the setting changed
 ADDIN_DIR=/addin MPC_PID=$MPC3 sh /addin/filebrowser-run.sh &
 sleep 3
 check "a changed setting is given at the next start" "up && login changed-in-conf && ! login \"$PW\""
+sed -i "s/^gateway_login=.*/gateway_login=1/" /addin/mpc_filebrowser_addin.conf
+mkdir -p /gateway; echo ADDIN_ID=gateway > /gateway/addin.manifest   # the gateway addin, installed beside it
+PREV=$(fb_pid)
+sleep 1000 & MPC4=$!          # MPC restarted with gateway_login=1
+ADDIN_DIR=/addin MPC_PID=$MPC4 sh /addin/filebrowser-run.sh &
+i=0; while { [ -z "$(fb_pid)" ] || [ "$(fb_pid)" = "$PREV" ]; } && [ $i -lt 60 ]; do sleep 1; i=$((i + 1)); done   # the new one
+gw() { wget -q -O /tmp/gw --header "X-MPC-Gateway-User: $1" "$2" "http://127.0.0.1:6760$3" 2>/tmp/gwerr; }
+check "gateway_login=1: the gateway user is let in without a password" "up && gw mpc -q \"/api/users?username=self\" && grep -q .loginMethod.:.proxy. /tmp/gw && grep -q .username.:.mpc. /tmp/gw"
+check "and may change files (uploads one)" "gw mpc --post-data=hello \"/api/resources?path=/Drive1/Samples/gw.txt&source=m\" && [ -s /m/Drive1/Samples/gw.txt ]"
+check "the header cannot claim the admin" "! gw admin -q \"/api/users?username=self\""
+check "the admin login still works" "login changed-in-conf"
+rm -f /m/Drive1/Samples/gw.txt
 SECOND=$(fb_pid)
-kill $MPC1 $MPC2 $MPC3
+kill $MPC1 $MPC2 $MPC3 $MPC4
 sleep 6
 check "stops when MPC exits" "[ ! -d /proc/$SECOND ] || grep -q \"^State:.*Z\" /proc/$SECOND/status"
 check "pid file removed" "[ ! -e /addin/filebrowser.pid ]"

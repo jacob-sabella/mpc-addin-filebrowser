@@ -48,6 +48,14 @@ If you'd rather skip the tunnel, `bind=0.0.0.0` in the settings opens FileBrowse
 Change the password first: the default is the same on every device. An admin can read, change and delete every file in
 the folders it shows, and the server runs as root.
 
+### Through MPC Gateway, with one login
+
+With the [MPC Gateway](https://github.com/jacob-sabella/mpc-addin-gateway) addin installed too, FileBrowser is on the
+gateway's start page. Turn on `gateway_login=1` (below) and logging in to the gateway is enough: FileBrowser lets you
+in as the gateway's user, with every file permission, without asking again. It works only while FileBrowser listens on
+the device only (`bind=127.0.0.1`, the default): the gateway names the user in a request header, which anything that
+reached FileBrowser directly could also send. The admin login above keeps working, for a tunnel without the gateway.
+
 ## Settings
 
 The settings file is `/data/mpc-addins/filebrowser/mpc_filebrowser_addin.conf`. It's read each time MPC starts, and an
@@ -58,6 +66,7 @@ upgrade keeps your edits.
 | `enabled` | `1` | `0` starts nothing |
 | `bind`, `port` | `127.0.0.1`, `6760` | where FileBrowser listens |
 | `password` | `mpcadmin` | the admin's password. It's set at the first start, and again whenever this line changes. A password changed in FileBrowser's own settings stays until then. At least 5 characters, and not `admin` (FileBrowser treats that one specially) |
+| `gateway_login` | `0` | `1`: logging in to MPC Gateway lets you in, as its user with every file permission. Needs the gateway addin installed and `bind=127.0.0.1`; otherwise off, and the log says why. A user the admin creates later gets every file permission too |
 | `sources` | `/media:/storage` | the folders it shows, separated by `:` (listed as Drives and Storage). A folder that doesn't exist or is empty, such as a mount point with nothing mounted, is skipped. `/media` holds the internal drive on Gen1, and every SD card and USB drive on both generations |
 | `index` | `0` | `1` turns on FileBrowser's search index: a full scan of the folders at each start, then rescans. It's off by default because the scan competes with MPC for the disk. Browsing, uploads and downloads work without it |
 | `previews` | `1` | image thumbnails |

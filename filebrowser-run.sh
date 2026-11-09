@@ -31,6 +31,22 @@ case "$PORT" in ''|*[!0-9]*) PORT=6760 ;; esac
 [ "$PREVIEWS" = 0 ] || PREVIEWS=1
 case "$MEMORY" in ''|*[!0-9]*) MEMORY=192 ;; esac
 
+# gateway_login=1: let in whoever logged in to the gateway addin (mpc-addin-gateway) as that user, without a second login.
+# The gateway names the user in X-MPC-Gateway-User on every request it passes on, replacing any value a client sent.
+# FileBrowser trusts that header from anyone who reaches it, so this is on only while it listens on the device only and
+# the gateway is installed beside this addin. The admin's own login stays, for a tunnel without the gateway.
+GATEWAY_LOGIN=0
+if [ "$(conf gateway_login)" = 1 ]; then
+    if [ "$BIND" != 127.0.0.1 ]; then
+        say "gateway_login=1 needs bind=127.0.0.1: with bind=$BIND anyone who reaches FileBrowser could claim a user; off"
+    elif [ ! -f "${D%/*}/gateway/addin.manifest" ]; then
+        say "gateway_login=1: the gateway addin isn't installed (no ${D%/*}/gateway); off"
+    else
+        GATEWAY_LOGIN=1
+        say "gateway_login: the gateway's login lets you in (as its user, with every file permission)"
+    fi
+fi
+
 # A YAML double-quoted string. The settings refuse " and \ in paths, so nothing needs escaping.
 q() { printf '"%s"' "$1"; }
 
@@ -86,6 +102,10 @@ write_config() {
             echo "      name: $(q "$n")"
             echo "      config:"
             echo "        defaultEnabled: true"
+            if [ "$GATEWAY_LOGIN" = 1 ]; then   # the gateway's user, made at its first visit, may do what the admin may
+                echo "        defaultPermissions:"
+                for k in view download modify delete create; do echo "          $k: true"; done
+            fi
             if [ "$INDEX" = 0 ]; then   # browse only: no index of the whole drive, so no disk scan while MPC plays
                 echo "        rules:"
                 echo "          - folderPath: \"/\""
@@ -100,6 +120,11 @@ write_config() {
         echo "    password:"
         echo "      enabled: true"
         echo "      signup: false"
+        if [ "$GATEWAY_LOGIN" = 1 ]; then
+            echo "    proxy:"
+            echo "      enabled: true"
+            echo "      header: \"X-MPC-Gateway-User\""
+        fi
     } > config.yaml.new
     grep -q '^    - path:' config.yaml.new || { say "no usable folder in sources=$SOURCES"; rm -f config.yaml.new; return 1; }
     mv config.yaml.new config.yaml
@@ -115,20 +140,27 @@ fi
 
 alive() { [ -r "/proc/$1/stat" ] && ! sed 's/.*) //' "/proc/$1/stat" | grep -q '^Z'; }
 
-# A FileBrowser left by an earlier MPC (still stopping, or started by a launcher that doesn't stop it): stop it first.
-if [ -s "$PIDFILE" ]; then
-    old=$(cat "$PIDFILE")
-    case "$old" in ''|*[!0-9]*) ;; *)
-        # ours: run from this folder as ./filebrowser -c (by cwd and command line; exe can name an emulator in tests)
-        if alive "$old" && [ "$(readlink "/proc/$old/cwd" 2>/dev/null)" = "$D" ] &&
-            tr '\0' ' ' < "/proc/$old/cmdline" 2>/dev/null | grep -q '\./filebrowser -c '; then
-            say "stopping the FileBrowser of an earlier MPC run ($old)"
-            kill "$old" 2>/dev/null
-            i=0; while alive "$old" && [ $i -lt 25 ]; do sleep 0.2; i=$((i + 1)); done
-            alive "$old" && kill -9 "$old" 2>/dev/null
-        fi ;;
-    esac
-fi
+# A FileBrowser left by an earlier MPC (still stopping, or started by a launcher that doesn't stop it): stop its script
+# first (it would start its FileBrowser again while that MPC lingers, and the two would fight over the port), then any
+# FileBrowser still left.
+stop_old() {   # pid file, what the command line must hold
+    [ -s "$1" ] || return 0
+    old=$(cat "$1")
+    case "$old" in ''|*[!0-9]*) return 0 ;; esac
+    [ "$old" != $$ ] || return 0
+    # ours: run from this folder (by cwd and command line; exe can name an emulator in tests)
+    if alive "$old" && [ "$(readlink "/proc/$old/cwd" 2>/dev/null)" = "$D" ] &&
+        tr '\0' ' ' < "/proc/$old/cmdline" 2>/dev/null | grep -q "$2"; then
+        say "stopping the $3 of an earlier MPC run ($old)"
+        kill "$old" 2>/dev/null
+        i=0; while alive "$old" && [ $i -lt 50 ]; do sleep 0.2; i=$((i + 1)); done
+        alive "$old" && kill -9 "$old" 2>/dev/null
+    fi
+    return 0
+}
+stop_old run.pid 'filebrowser-run\.sh' script
+stop_old "$PIDFILE" '\./filebrowser -c ' FileBrowser
+echo $$ > run.pid
 
 chmod 755 filebrowser 2>/dev/null   # the installer copies every file as 644
 export GOMAXPROCS=2 GOMEMLIMIT="${MEMORY}MiB" HOME="$D"
@@ -158,6 +190,7 @@ stop() {
         wait "$FB" 2>/dev/null
     fi
     rm -f "$PIDFILE"
+    [ "$(cat run.pid 2>/dev/null)" = $$ ] && rm -f run.pid
     say "stopped"
     exit 0
 }
