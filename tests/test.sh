@@ -76,6 +76,9 @@ kill "$PID" 2>/dev/null || true
 setup; mpc other; sleep 1
 check "a process not named MPC starts nothing" '[ ! -e "$T/addin/fake.pid" ] && ! grep -q mpc-filebrowser-addin "$T/mpc.err"'
 kill "$PID" 2>/dev/null || true
+cp "$T/bin/MPC" "$T/bin/MPC Sample"; setup; mpc "MPC Sample"
+check "the MPC Sample's process (MPC Sample) starts it" 'wait_for "[ -s $T/addin/fake.pid ]"'
+kill "$PID" 2>/dev/null || true; wait_for "[ -e $T/addin/fake.stopped ]" || true; rm -f "$T/addin/fake.pid" "$T/addin/fake.stopped"
 setup; rm "$T/addin/filebrowser-run.sh"; mpc; sleep 1
 check "no script: says so, MPC keeps running" 'grep -q "reinstall the addin" "$T/mpc.err" && ! gone "$PID"'
 kill "$PID" 2>/dev/null || true
