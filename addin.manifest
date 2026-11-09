@@ -6,3 +6,6 @@ ADDIN_CONF=mpc_filebrowser_addin.conf
 ADDIN_FILES="filebrowser filebrowser-run.sh LICENSE-filebrowser"
 ADDIN_DONE="From a computer: ssh -N -L 6760:127.0.0.1:6760 root@<device>, then open http://localhost:6760 and log in as admin, password mpcadmin (change it there, or with password= in mpc_filebrowser_addin.conf)."
 ADDIN_NETWORK=1
+ADDIN_LOGIN=1
+ADDIN_WEB_PORT=6760
+ADDIN_WEB_PORT_SETTING=port
