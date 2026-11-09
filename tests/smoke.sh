@@ -40,8 +40,9 @@ check "no index by default" "grep -q \"viewable: true\" /addin/config.yaml"
 FIRST=$(fb_pid)
 sleep 1000 & MPC2=$!          # MPC restarted while the first run is still up
 ADDIN_DIR=/addin MPC_PID=$MPC2 sh /addin/filebrowser-run.sh &
-sleep 3
-check "second start stops the first FileBrowser" "[ ! -d /proc/$FIRST ] || grep -q \"^State:.*Z\" /proc/$FIRST/status"
+first_gone() { [ ! -d /proc/$FIRST ] || grep -q "^State:.*Z" /proc/$FIRST/status; }
+i=0; while ! first_gone && [ $i -lt 40 ]; do sleep 0.5; i=$((i+1)); done   # up to 20 s: slow under QEMU on a loaded runner
+check "second start stops the first FileBrowser" first_gone
 check "second start answers" up
 check "password not given again" "grep -q \"adminPassword: \\\"\\\"\" /addin/config.yaml && login \"$PW\""
 sed -i "s/^password=.*/password=changed-in-conf/" /addin/mpc_filebrowser_addin.conf
