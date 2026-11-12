@@ -46,9 +46,10 @@ check "second start stops the first FileBrowser" first_gone
 check "second start answers" up
 check "password not given again" "grep -q \"adminPassword: \\\"\\\"\" /addin/config.yaml && login \"$PW\""
 sed -i "s/^password=.*/password=changed-in-conf/" /addin/mpc_filebrowser_addin.conf
+PREV=$(fb_pid)
 sleep 1000 & MPC3=$!          # MPC restarted after the setting changed
 ADDIN_DIR=/addin MPC_PID=$MPC3 sh /addin/filebrowser-run.sh &
-sleep 3
+i=0; while { [ -z "$(fb_pid)" ] || [ "$(fb_pid)" = "$PREV" ]; } && [ $i -lt 60 ]; do sleep 1; i=$((i + 1)); done   # the new one (3 s raced under QEMU)
 check "a changed setting is given at the next start" "up && login changed-in-conf && ! login \"$PW\""
 sed -i "s/^gateway_login=.*/gateway_login=1/" /addin/mpc_filebrowser_addin.conf
 mkdir -p /gateway; echo ADDIN_ID=gateway > /gateway/addin.manifest   # the gateway addin, installed beside it
